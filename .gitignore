@@ -1,0 +1,8 @@
+.gradle/
+.idea/
+node_modules/
+build/
+**/build/
+**/out/
+.next/
+.DS_Store

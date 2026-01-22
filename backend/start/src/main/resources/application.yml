@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/training_platform
+    username: training
+    password: training
+  kafka:
+    bootstrap-servers: localhost:9092
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+training:
+  events:
+    topic: training.events
