@@ -6,7 +6,10 @@ COPY app ./app
 COPY domain ./domain
 COPY infra ./infra
 COPY start ./start
-RUN mvn -pl start -am package -DskipTests
+RUN mvn -B -ntp -pl start -am package -DskipTests \
+    -Dmaven.wagon.http.retryHandler.count=3 \
+    -Dmaven.wagon.http.retryHandler.requestSentEnabled=true \
+    -Dhttp.keepAlive=false
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
