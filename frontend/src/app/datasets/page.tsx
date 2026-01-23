@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createDataset } from "@/lib/api";
 
 const datasets = [
   {
@@ -30,6 +35,28 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function DatasetsPage() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleUploadDataset = async () => {
+    const name = window.prompt("请输入数据集名称");
+    if (!name) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const dataset = await createDataset(name);
+      router.push(`/datasets/${dataset.id}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "创建数据集失败";
+      window.alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,7 +66,9 @@ export default function DatasetsPage() {
             支持图片或压缩包上传，自动生成标注项目。
           </p>
         </div>
-        <Button>上传新数据集</Button>
+        <Button onClick={handleUploadDataset} disabled={isSubmitting}>
+          上传新数据集
+        </Button>
       </div>
 
       <Card>
