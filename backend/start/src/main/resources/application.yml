@@ -1,10 +1,10 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/training_platform
-    username: training
-    password: training
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/training_platform}
+    username: ${SPRING_DATASOURCE_USERNAME:training}
+    password: ${SPRING_DATASOURCE_PASSWORD:training}
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 mybatis-plus:
   configuration:
@@ -12,4 +12,4 @@ mybatis-plus:
 
 training:
   events:
-    topic: training.events
+    topic: ${TRAINING_EVENTS_TOPIC:training.events}
