@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,10 @@ const steps = [
 ];
 
 export default function DatasetDetailPage({ params }: { params: { id: string } }) {
+  const handlePlaceholder = (message: string) => () => {
+    window.alert(message);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -37,8 +43,15 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline">获取 OSS 上传凭证</Button>
-          <Button>继续上传</Button>
+          <Button
+            variant="outline"
+            onClick={handlePlaceholder("OSS 上传凭证功能开发中")}
+          >
+            获取 OSS 上传凭证
+          </Button>
+          <Button onClick={handlePlaceholder("上传入口功能开发中")}>
+            继续上传
+          </Button>
         </div>
       </div>
 
@@ -91,14 +104,24 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
                 训练完成后将模型与指标上传至 OSS。
               </p>
             </div>
-            <Button variant="outline">查看事件日志</Button>
+            <Button
+              variant="outline"
+              onClick={handlePlaceholder("事件日志功能开发中")}
+            >
+              查看事件日志
+            </Button>
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">训练结果文件</p>
               <p className="text-sm text-muted-foreground">暂无结果</p>
             </div>
-            <Button variant="secondary">下载结果</Button>
+            <Button
+              variant="secondary"
+              onClick={handlePlaceholder("训练结果下载功能开发中")}
+            >
+              下载结果
+            </Button>
           </div>
         </CardContent>
       </Card>

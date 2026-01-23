@@ -1,7 +1,13 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LabelingPage() {
+  const handleOpenLabelStudio = () => {
+    window.open("http://localhost:8080/projects/128", "_blank");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -29,7 +35,7 @@ export default function LabelingPage() {
               <li>结果文件将回写至 OSS 并在平台可下载。</li>
             </ul>
           </div>
-          <Button>打开 Label Studio</Button>
+          <Button onClick={handleOpenLabelStudio}>打开 Label Studio</Button>
         </CardContent>
       </Card>
     </div>

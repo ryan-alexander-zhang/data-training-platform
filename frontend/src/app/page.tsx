@@ -1,5 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createDataset } from "@/lib/api";
 
 const quickActions = [
   {
@@ -17,6 +22,28 @@ const quickActions = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreateDataset = async () => {
+    const name = window.prompt("请输入数据集名称");
+    if (!name) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const dataset = await createDataset(name);
+      router.push(`/datasets/${dataset.id}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "创建数据集失败";
+      window.alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -26,7 +53,9 @@ export default function DashboardPage() {
             统一管理数据集、标注与训练任务。
           </p>
         </div>
-        <Button>新建数据集</Button>
+        <Button onClick={handleCreateDataset} disabled={isSubmitting}>
+          新建数据集
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
