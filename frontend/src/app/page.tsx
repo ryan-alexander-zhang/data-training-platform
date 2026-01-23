@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import MessageDialog from "@/components/message-dialog";
-import { createDataset } from "@/lib/api";
+import DatasetCreateDialog from "@/components/dataset-create-dialog";
 
 const quickActions = [
   {
@@ -24,27 +21,6 @@ const quickActions = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleCreateDataset = async () => {
-    const name = window.prompt("请输入数据集名称");
-    if (!name) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const dataset = await createDataset(name);
-      router.push(`/datasets/${dataset.id}`);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "创建数据集失败";
-      setErrorMessage(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -55,9 +31,10 @@ export default function DashboardPage() {
             统一管理数据集、标注与训练任务。
           </p>
         </div>
-        <Button onClick={handleCreateDataset} disabled={isSubmitting}>
-          新建数据集
-        </Button>
+        <DatasetCreateDialog
+          triggerLabel="新建数据集"
+          onCreated={(dataset) => router.push(`/datasets/${dataset.id}`)}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -72,17 +49,6 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-      {errorMessage ? (
-        <MessageDialog
-          open
-          message={errorMessage}
-          onOpenChange={(open) => {
-            if (!open) {
-              setErrorMessage(null);
-            }
-          }}
-        />
-      ) : null}
     </div>
   );
 }

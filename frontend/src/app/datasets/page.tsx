@@ -1,34 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MessageDialog from "@/components/message-dialog";
-import { createDataset } from "@/lib/api";
-
-const datasets = [
-  {
-    id: "ds-2024-001",
-    name: "风机叶片缺陷",
-    status: "READY_FOR_LABELING",
-    assets: 200,
-    tenant: "ACME-NORTH",
-    updatedAt: "2024-07-20 14:35"
-  },
-  {
-    id: "ds-2024-002",
-    name: "焊缝裂纹",
-    status: "ANNOTATION_COMPLETED",
-    assets: 180,
-    tenant: "ACME-NORTH",
-    updatedAt: "2024-07-19 09:12"
-  }
-];
+import DatasetCreateDialog from "@/components/dataset-create-dialog";
+import { listDatasets, DatasetSummary } from "@/lib/api";
 
 const statusLabels: Record<string, string> = {
+  CREATED: "已创建",
+  UPLOADING: "上传中",
   READY_FOR_LABELING: "待标注",
   ANNOTATION_COMPLETED: "标注完成",
   TRAINING_REQUESTED: "训练排队",
@@ -36,28 +18,26 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function DatasetsPage() {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleUploadDataset = async () => {
-    const name = window.prompt("请输入数据集名称");
-    if (!name) {
-      return;
-    }
-
-    setIsSubmitting(true);
+  const fetchDatasets = async () => {
+    setIsLoading(true);
     try {
-      const dataset = await createDataset(name);
-      router.push(`/datasets/${dataset.id}`);
+      const data = await listDatasets();
+      setDatasets(data);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "创建数据集失败";
+      const message = error instanceof Error ? error.message : "加载数据集失败";
       setErrorMessage(message);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDatasets();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -68,9 +48,7 @@ export default function DatasetsPage() {
             支持图片或压缩包上传，自动生成标注项目。
           </p>
         </div>
-        <Button onClick={handleUploadDataset} disabled={isSubmitting}>
-          上传新数据集
-        </Button>
+        <DatasetCreateDialog triggerLabel="上传新数据集" onCreated={fetchDatasets} />
       </div>
 
       <Card>
@@ -78,25 +56,33 @@ export default function DatasetsPage() {
           <CardTitle>最近数据集</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {datasets.map((dataset) => (
-            <div
-              key={dataset.id}
-              className="flex flex-col gap-3 rounded-lg border border-border p-4 md:flex-row md:items-center md:justify-between"
-            >
-              <div>
-                <div className="flex items-center gap-3">
-                  <Link href={`/datasets/${dataset.id}`} className="font-medium">
-                    {dataset.name}
-                  </Link>
-                  <Badge>{statusLabels[dataset.status]}</Badge>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">正在加载数据集…</p>
+          ) : datasets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无数据集，请先创建。</p>
+          ) : (
+            datasets.map((dataset) => (
+              <div
+                key={dataset.id}
+                className="flex flex-col gap-3 rounded-lg border border-border p-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/datasets/${dataset.id}`} className="font-medium">
+                      {dataset.name}
+                    </Link>
+                    <Badge>{statusLabels[dataset.status] ?? dataset.status}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {dataset.assetCount} 张 · 最近更新 {new Date(dataset.updatedAt).toLocaleString()}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {dataset.assets} 张 · 租户 {dataset.tenant}
-                </p>
+                <div className="text-sm text-muted-foreground">
+                  创建于 {new Date(dataset.createdAt).toLocaleString()}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">更新时间 {dataset.updatedAt}</div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
       {errorMessage ? (

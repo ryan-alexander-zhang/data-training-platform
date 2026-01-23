@@ -1,50 +1,49 @@
-CREATE TABLE tenants (
-    id UUID PRIMARY KEY,
-    name VARCHAR(128) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE datasets (
+CREATE TABLE IF NOT EXISTS datasets (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    status VARCHAR(64) NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_datasets_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_datasets_tenant ON datasets (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_datasets_tenant ON datasets (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_datasets_updated ON datasets (updated_at);
 
-CREATE TABLE dataset_assets (
+CREATE TABLE IF NOT EXISTS dataset_files (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
     dataset_id UUID NOT NULL,
-    object_key VARCHAR(512) NOT NULL,
-    checksum VARCHAR(128),
-    size_bytes BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_assets_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    filename TEXT NOT NULL,
+    object_key TEXT NOT NULL,
+    size BIGINT NOT NULL,
+    content_type TEXT,
+    uploaded_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_assets_dataset ON dataset_assets (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_dataset_files_dataset ON dataset_files (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_dataset_files_tenant ON dataset_files (tenant_id);
 
-CREATE TABLE label_projects (
+CREATE TABLE IF NOT EXISTS training_results (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
     dataset_id UUID NOT NULL,
-    label_studio_project_id BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_label_project_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    artifact_key TEXT NOT NULL,
+    metrics_key TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE training_jobs (
+CREATE INDEX IF NOT EXISTS idx_training_results_dataset ON training_results (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_training_results_tenant ON training_results (tenant_id);
+
+CREATE TABLE IF NOT EXISTS training_events (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL,
     dataset_id UUID NOT NULL,
-    status VARCHAR(64) NOT NULL,
-    result_object_key VARCHAR(512),
-    created_at TIMESTAMPTZ NOT NULL,
-    completed_at TIMESTAMPTZ,
-    CONSTRAINT fk_training_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    dataset_name TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_training_events_tenant ON training_events (tenant_id);
+CREATE INDEX IF NOT EXISTS idx_training_events_occurred ON training_events (occurred_at);

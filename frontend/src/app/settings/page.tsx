@@ -1,15 +1,55 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ConfirmDialogButton from "@/components/confirm-dialog-button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import MessageDialog from "@/components/message-dialog";
+import { getSettings, Settings } from "@/lib/api";
 
 export default function SettingsPage() {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await getSettings();
+        setSettings(data);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "加载配置失败";
+        setErrorMessage(message);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  if (!settings) {
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-muted-foreground">正在加载配置…</p>
+        {errorMessage ? (
+          <MessageDialog
+            open
+            message={errorMessage}
+            onOpenChange={(open) => {
+              if (!open) {
+                setErrorMessage(null);
+              }
+            }}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">租户设置</h2>
         <p className="text-sm text-muted-foreground">
-          配置 OSS、Label Studio 与训练事件相关参数。
+          配置对象存储、Label Studio 与训练事件相关参数。
         </p>
       </div>
 
@@ -17,20 +57,15 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>对象存储</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Bucket</p>
-            <p className="font-medium">training-results</p>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="minio-endpoint">Endpoint</Label>
+            <Input id="minio-endpoint" value={settings.minioEndpoint} readOnly />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">STS 角色</p>
-            <p className="font-medium">oss-upload-role</p>
+          <div className="space-y-2">
+            <Label htmlFor="minio-bucket">Bucket</Label>
+            <Input id="minio-bucket" value={settings.minioBucket} readOnly />
           </div>
-          <ConfirmDialogButton
-            triggerLabel="更新配置"
-            title="对象存储配置"
-            description="对象存储配置更新功能开发中。"
-          />
         </CardContent>
       </Card>
 
@@ -38,22 +73,25 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Label Studio</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Base URL</p>
-            <p className="font-medium">http://localhost:8080</p>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="label-studio-base">Base URL</Label>
+            <Input id="label-studio-base" value={settings.labelStudioBaseUrl} readOnly />
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Webhook</p>
-            <p className="font-medium">/api/label-studio/webhook</p>
-          </div>
-          <ConfirmDialogButton
-            triggerLabel="配置回调"
-            title="Label Studio 回调"
-            description="Label Studio 回调配置功能开发中。"
-          />
         </CardContent>
       </Card>
+
+      {errorMessage ? (
+        <MessageDialog
+          open
+          message={errorMessage}
+          onOpenChange={(open) => {
+            if (!open) {
+              setErrorMessage(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

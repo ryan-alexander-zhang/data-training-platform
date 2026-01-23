@@ -7,8 +7,11 @@ import com.example.training.domain.DatasetStatus;
 import com.example.training.domain.TenantId;
 import com.example.training.infra.entity.DatasetEntity;
 import com.example.training.infra.mapper.DatasetMapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 数据集仓储实现。
@@ -38,6 +41,16 @@ public class DatasetRepositoryImpl implements DatasetRepository {
             return Optional.empty();
         }
         return Optional.of(toDomain(entity));
+    }
+
+    @Override
+    public List<Dataset> findByTenant(TenantId tenantId) {
+        QueryWrapper<DatasetEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("tenant_id", tenantId.value())
+                .orderByDesc("updated_at");
+        return mapper.selectList(wrapper).stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     private DatasetEntity toEntity(Dataset dataset) {
