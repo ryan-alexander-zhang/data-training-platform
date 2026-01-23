@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
@@ -15,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   kafka:
-    image: bitnami/kafka:3.7
+    image: bitnami/kafka:3.7.0
     container_name: training-kafka
     env_file: .env
     environment:
