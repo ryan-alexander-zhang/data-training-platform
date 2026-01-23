@@ -6,3 +6,4 @@ build/
 **/out/
 .next/
 .DS_Store
+.data/
