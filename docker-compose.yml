@@ -4,10 +4,11 @@ services:
   postgres:
     image: postgres:16
     container_name: training-postgres
+    env_file: .env
     environment:
-      POSTGRES_USER: training
-      POSTGRES_PASSWORD: training
-      POSTGRES_DB: training_platform
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -16,11 +17,12 @@ services:
   kafka:
     image: bitnami/kafka:3.7
     container_name: training-kafka
+    env_file: .env
     environment:
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=${KAFKA_CFG_ADVERTISED_LISTENERS}
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@training-kafka:9093
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
@@ -30,6 +32,7 @@ services:
   label-studio:
     image: heartexlabs/label-studio:1.13.1
     container_name: label-studio
+    env_file: .env
     environment:
       LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
       LABEL_STUDIO_USERNAME: admin
@@ -43,6 +46,7 @@ services:
     image: minio/minio:RELEASE.2024-06-13T22-53-53Z
     container_name: training-minio
     command: server /data --console-address ":9001"
+    env_file: .env
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
@@ -51,6 +55,35 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: training-backend
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+      TRAINING_EVENTS_TOPIC: ${TRAINING_EVENTS_TOPIC}
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+      - kafka
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: training-frontend
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
