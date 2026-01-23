@@ -51,7 +51,7 @@ services:
     env_file: .env
     environment:
       LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK: "true"
-      LABEL_STUDIO_USERNAME: admin
+      LABEL_STUDIO_USERNAME: admin@localhost
       LABEL_STUDIO_PASSWORD: admin
     ports:
       - "8080:8080"
