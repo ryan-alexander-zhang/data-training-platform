@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import ConfirmDialogButton from "@/components/confirm-dialog-button";
 
 const steps = [
   {
@@ -29,10 +30,6 @@ const steps = [
 ];
 
 export default function DatasetDetailPage({ params }: { params: { id: string } }) {
-  const handlePlaceholder = (message: string) => () => {
-    window.alert(message);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -43,15 +40,17 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={handlePlaceholder("OSS 上传凭证功能开发中")}
-          >
-            获取 OSS 上传凭证
-          </Button>
-          <Button onClick={handlePlaceholder("上传入口功能开发中")}>
-            继续上传
-          </Button>
+          <ConfirmDialogButton
+            triggerLabel="获取 OSS 上传凭证"
+            title="OSS 上传凭证"
+            description="OSS 上传凭证功能开发中。"
+          />
+          <ConfirmDialogButton
+            triggerLabel="继续上传"
+            title="继续上传"
+            description="上传入口功能开发中。"
+            variant="default"
+          />
         </div>
       </div>
 
@@ -104,24 +103,23 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
                 训练完成后将模型与指标上传至 OSS。
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={handlePlaceholder("事件日志功能开发中")}
-            >
-              查看事件日志
-            </Button>
+            <ConfirmDialogButton
+              triggerLabel="查看事件日志"
+              title="事件日志"
+              description="事件日志功能开发中。"
+            />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">训练结果文件</p>
               <p className="text-sm text-muted-foreground">暂无结果</p>
             </div>
-            <Button
+            <ConfirmDialogButton
+              triggerLabel="下载结果"
+              title="训练结果"
+              description="训练结果下载功能开发中。"
               variant="secondary"
-              onClick={handlePlaceholder("训练结果下载功能开发中")}
-            >
-              下载结果
-            </Button>
+            />
           </div>
         </CardContent>
       </Card>
