@@ -1,13 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ConfirmDialogButton from "@/components/confirm-dialog-button";
 
 export default function SettingsPage() {
-  const handlePlaceholder = (message: string) => () => {
-    window.alert(message);
-  };
-
   return (
     <div className="space-y-6">
       <div>
@@ -30,12 +26,11 @@ export default function SettingsPage() {
             <p className="text-sm text-muted-foreground">STS 角色</p>
             <p className="font-medium">oss-upload-role</p>
           </div>
-          <Button
-            variant="outline"
-            onClick={handlePlaceholder("对象存储配置更新功能开发中")}
-          >
-            更新配置
-          </Button>
+          <ConfirmDialogButton
+            triggerLabel="更新配置"
+            title="对象存储配置"
+            description="对象存储配置更新功能开发中。"
+          />
         </CardContent>
       </Card>
 
@@ -52,12 +47,11 @@ export default function SettingsPage() {
             <p className="text-sm text-muted-foreground">Webhook</p>
             <p className="font-medium">/api/label-studio/webhook</p>
           </div>
-          <Button
-            variant="outline"
-            onClick={handlePlaceholder("Label Studio 回调配置功能开发中")}
-          >
-            配置回调
-          </Button>
+          <ConfirmDialogButton
+            triggerLabel="配置回调"
+            title="Label Studio 回调"
+            description="Label Studio 回调配置功能开发中。"
+          />
         </CardContent>
       </Card>
     </div>

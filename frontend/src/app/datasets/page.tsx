@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import MessageDialog from "@/components/message-dialog";
 import { createDataset } from "@/lib/api";
 
 const datasets = [
@@ -37,6 +38,7 @@ const statusLabels: Record<string, string> = {
 export default function DatasetsPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleUploadDataset = async () => {
     const name = window.prompt("请输入数据集名称");
@@ -51,7 +53,7 @@ export default function DatasetsPage() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "创建数据集失败";
-      window.alert(message);
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -97,6 +99,17 @@ export default function DatasetsPage() {
           ))}
         </CardContent>
       </Card>
+      {errorMessage ? (
+        <MessageDialog
+          open
+          message={errorMessage}
+          onOpenChange={(open) => {
+            if (!open) {
+              setErrorMessage(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }
