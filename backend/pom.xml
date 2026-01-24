@@ -24,6 +24,7 @@
         <postgres.version>42.7.3</postgres.version>
         <kafka.version>3.2.2</kafka.version>
         <junit.version>5.10.2</junit.version>
+        <minio.version>8.5.10</minio.version>
     </properties>
 
     <dependencyManagement>

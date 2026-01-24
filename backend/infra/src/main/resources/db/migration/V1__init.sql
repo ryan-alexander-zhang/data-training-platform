@@ -10,8 +10,7 @@ CREATE TABLE datasets (
     name VARCHAR(255) NOT NULL,
     status VARCHAR(64) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_datasets_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE INDEX idx_datasets_tenant ON datasets (tenant_id);
@@ -23,8 +22,7 @@ CREATE TABLE dataset_assets (
     object_key VARCHAR(512) NOT NULL,
     checksum VARCHAR(128),
     size_bytes BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_assets_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    created_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE INDEX idx_assets_dataset ON dataset_assets (dataset_id);
@@ -34,8 +32,7 @@ CREATE TABLE label_projects (
     tenant_id UUID NOT NULL,
     dataset_id UUID NOT NULL,
     label_studio_project_id BIGINT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT fk_label_project_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    created_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE training_jobs (
@@ -45,6 +42,5 @@ CREATE TABLE training_jobs (
     status VARCHAR(64) NOT NULL,
     result_object_key VARCHAR(512),
     created_at TIMESTAMPTZ NOT NULL,
-    completed_at TIMESTAMPTZ,
-    CONSTRAINT fk_training_dataset FOREIGN KEY (dataset_id) REFERENCES datasets (id)
+    completed_at TIMESTAMPTZ
 );

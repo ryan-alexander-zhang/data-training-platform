@@ -1,5 +1,8 @@
 package com.example.training.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Objects;
 import java.util.UUID;
 
@@ -15,10 +18,12 @@ public final class DatasetId {
         this.value = Objects.requireNonNull(value, "datasetId is required");
     }
 
+    @JsonCreator
     public static DatasetId of(UUID value) {
         return new DatasetId(value);
     }
 
+    @JsonValue
     public UUID value() {
         return value;
     }

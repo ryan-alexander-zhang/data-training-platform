@@ -7,8 +7,11 @@ import com.example.training.domain.DatasetStatus;
 import com.example.training.domain.TenantId;
 import com.example.training.infra.entity.DatasetEntity;
 import com.example.training.infra.mapper.DatasetMapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 数据集仓储实现。
@@ -23,7 +26,9 @@ public class DatasetRepositoryImpl implements DatasetRepository {
     @Override
     public Dataset save(Dataset dataset) {
         DatasetEntity entity = toEntity(dataset);
-        if (mapper.selectById(entity.getId()) == null) {
+        QueryWrapper<DatasetEntity> existing = new QueryWrapper<>();
+        existing.eq("id", entity.getId());
+        if (mapper.selectOne(existing) == null) {
             mapper.insert(entity);
         } else {
             mapper.updateById(entity);
@@ -33,11 +38,24 @@ public class DatasetRepositoryImpl implements DatasetRepository {
 
     @Override
     public Optional<Dataset> findById(TenantId tenantId, DatasetId datasetId) {
-        DatasetEntity entity = mapper.selectById(datasetId.value());
+        QueryWrapper<DatasetEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("id", datasetId.value())
+                .eq("tenant_id", tenantId.value());
+        DatasetEntity entity = mapper.selectOne(wrapper);
         if (entity == null || !entity.getTenantId().equals(tenantId.value())) {
             return Optional.empty();
         }
         return Optional.of(toDomain(entity));
+    }
+
+    @Override
+    public List<Dataset> findByTenant(TenantId tenantId) {
+        QueryWrapper<DatasetEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("tenant_id", tenantId.value())
+                .orderByDesc("updated_at");
+        return mapper.selectList(wrapper).stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     private DatasetEntity toEntity(Dataset dataset) {
