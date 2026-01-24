@@ -6,4 +6,6 @@ public interface LabelProjectRepository {
     LabelProject save(LabelProject project);
 
     Optional<LabelProject> findByDataset(TenantId tenantId, DatasetId datasetId);
+
+    Optional<LabelProject> findByLabelStudioProjectId(long labelStudioProjectId);
 }

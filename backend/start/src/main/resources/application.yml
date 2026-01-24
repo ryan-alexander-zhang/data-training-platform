@@ -32,6 +32,8 @@ training:
     base-url: ${LABEL_STUDIO_BASE_URL:http://localhost:8080}
     api-base-url: ${LABEL_STUDIO_API_BASE_URL:${LABEL_STUDIO_BASE_URL:http://localhost:8080}}
     api-token: ${LABEL_STUDIO_API_TOKEN:}
+    webhook-base-url: ${LABEL_STUDIO_WEBHOOK_BASE_URL:http://localhost:8081}
+    webhook-token: ${LABEL_STUDIO_WEBHOOK_TOKEN:}
   public-base-url: ${PUBLIC_BASE_URL:http://localhost:8081}
   storage:
     minio:

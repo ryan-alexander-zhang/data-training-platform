@@ -36,6 +36,13 @@ public class LabelProjectRepositoryImpl implements LabelProjectRepository {
         return Optional.ofNullable(mapper.selectOne(wrapper)).map(this::toDomain);
     }
 
+    @Override
+    public Optional<LabelProject> findByLabelStudioProjectId(long labelStudioProjectId) {
+        QueryWrapper<LabelProjectEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("label_studio_project_id", labelStudioProjectId);
+        return Optional.ofNullable(mapper.selectOne(wrapper)).map(this::toDomain);
+    }
+
     private LabelProjectEntity toEntity(LabelProject project) {
         LabelProjectEntity entity = new LabelProjectEntity();
         entity.setId(project.id());

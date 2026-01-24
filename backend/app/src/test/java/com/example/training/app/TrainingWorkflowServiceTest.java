@@ -53,12 +53,17 @@ class TrainingWorkflowServiceTest {
         dataset.markTrainingRequested();
         datasetRepository.save(dataset);
 
+        String annotationKey = "datasets/" + tenantId + "/" + dataset.id().value() + "/annotations/label-studio.json";
+        storageService.upload(annotationKey, new ByteArrayInputStream("{}".getBytes()), 2L, "application/json");
         TrainingEvent event = new TrainingEvent(
                 TrainingEventType.TRAINING_REQUESTED,
                 dataset.tenantId(),
                 dataset.id(),
                 Instant.now(),
-                Map.of("datasetName", dataset.name())
+                Map.of(
+                        "datasetName", dataset.name(),
+                        "annotationKey", annotationKey
+                )
         );
 
         workflowService.handleTrainingRequested(event);
@@ -69,6 +74,7 @@ class TrainingWorkflowServiceTest {
         assertEquals(1, eventPublisher.events.size());
         assertEquals(1, eventRecordRepository.records.size());
         assertTrue(storageService.objects.values().stream().anyMatch(bytes -> bytes.length > 0));
+        assertTrue(storageService.objects.keySet().stream().anyMatch(key -> key.contains("/results/")));
     }
 
     private static class InMemoryDatasetRepository implements DatasetRepository {

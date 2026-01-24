@@ -8,4 +8,8 @@ public interface LabelStudioService {
     void importTasks(long projectId, List<LabelStudioTask> tasks);
 
     String exportAnnotations(long projectId);
+
+    LabelStudioProjectSummary getProjectSummary(long projectId);
+
+    void ensureWebhook(long projectId, String url);
 }

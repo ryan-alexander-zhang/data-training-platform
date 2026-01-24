@@ -130,7 +130,9 @@ public class TrainingPlatformConfiguration {
             UploadPartRepository uploadPartRepository,
             LabelProjectRepository labelProjectRepository,
             LabelStudioService labelStudioService,
-            @Value("${training.public-base-url:http://localhost:8081}") String publicBaseUrl
+            @Value("${training.public-base-url:http://localhost:8081}") String publicBaseUrl,
+            @Value("${training.label-studio.webhook-base-url:http://localhost:8081}") String labelStudioWebhookBaseUrl,
+            @Value("${training.label-studio.webhook-token:}") String labelStudioWebhookToken
     ) {
         return new DatasetApplicationService(
                 repository,
@@ -143,7 +145,9 @@ public class TrainingPlatformConfiguration {
                 uploadPartRepository,
                 labelProjectRepository,
                 labelStudioService,
-                publicBaseUrl
+                publicBaseUrl,
+                labelStudioWebhookBaseUrl,
+                labelStudioWebhookToken
         );
     }
 

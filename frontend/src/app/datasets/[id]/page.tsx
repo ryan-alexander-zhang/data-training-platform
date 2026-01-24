@@ -86,10 +86,14 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
     return stepConfig.map((step) => {
       const statusIndex = stepConfig.findIndex((item) => item.key === dataset.status);
       const stepIndex = stepConfig.findIndex((item) => item.key === step.key);
+      const isCompleted = dataset.status === "TRAINING_COMPLETED";
       return {
         title: step.title,
-        status:
-          stepIndex < statusIndex
+        status: isCompleted
+          ? stepIndex <= statusIndex
+            ? "完成"
+            : "待开始"
+          : stepIndex < statusIndex
             ? "完成"
             : stepIndex === statusIndex
               ? "进行中"

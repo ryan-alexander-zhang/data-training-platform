@@ -27,10 +27,14 @@ import com.example.training.domain.UploadSession;
 import com.example.training.domain.UploadSessionRepository;
 import com.example.training.domain.UploadSessionStatus;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.UUID;
 
 /**
@@ -41,6 +45,7 @@ import java.util.UUID;
  * 2. 上传文件与状态流转
  * 3. 标注完成后触发训练事件
  */
+@Slf4j
 public class DatasetApplicationService {
     private final DatasetRepository repository;
     private final TrainingEventPublisher eventPublisher;
@@ -53,6 +58,8 @@ public class DatasetApplicationService {
     private final LabelProjectRepository labelProjectRepository;
     private final LabelStudioService labelStudioService;
     private final String publicBaseUrl;
+    private final String labelStudioWebhookBaseUrl;
+    private final String labelStudioWebhookToken;
 
     public DatasetApplicationService(DatasetRepository repository,
                                      TrainingEventPublisher eventPublisher,
@@ -64,7 +71,9 @@ public class DatasetApplicationService {
                                      UploadPartRepository uploadPartRepository,
                                      LabelProjectRepository labelProjectRepository,
                                      LabelStudioService labelStudioService,
-                                     String publicBaseUrl) {
+                                     String publicBaseUrl,
+                                     String labelStudioWebhookBaseUrl,
+                                     String labelStudioWebhookToken) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.fileRepository = fileRepository;
@@ -76,6 +85,8 @@ public class DatasetApplicationService {
         this.labelProjectRepository = labelProjectRepository;
         this.labelStudioService = labelStudioService;
         this.publicBaseUrl = publicBaseUrl;
+        this.labelStudioWebhookBaseUrl = labelStudioWebhookBaseUrl;
+        this.labelStudioWebhookToken = labelStudioWebhookToken;
     }
 
     /**
@@ -123,7 +134,7 @@ public class DatasetApplicationService {
         }
 
         UUID fileId = UUIDv7Generator.generate();
-        String objectKey = "datasets/" + tenantId + "/" + datasetId + "/" + fileId + "-" + filename;
+        String objectKey = buildRawObjectKey(tenantId, datasetId, fileId, filename);
         storageService.upload(objectKey, inputStream, size, contentType);
 
         DatasetFile file = new DatasetFile(
@@ -151,7 +162,7 @@ public class DatasetApplicationService {
         }
 
         UUID sessionId = UUIDv7Generator.generate();
-        String objectKey = "datasets/" + tenantId + "/" + datasetId + "/" + sessionId + "-" + filename;
+        String objectKey = buildRawObjectKey(tenantId, datasetId, sessionId, filename);
         MultipartUpload upload = storageService.initMultipartUpload(objectKey, contentType);
 
         UploadSession session = new UploadSession(
@@ -276,6 +287,15 @@ public class DatasetApplicationService {
             projectId = existing.labelStudioProjectId();
         }
 
+        String webhookUrl = buildLabelStudioWebhookUrl();
+        if (webhookUrl != null) {
+            try {
+                labelStudioService.ensureWebhook(projectId, webhookUrl);
+            } catch (Exception exception) {
+                throw new IllegalStateException("label studio webhook ensure failed", exception);
+            }
+        }
+
         List<DatasetFile> files = listFiles(tenantId, datasetId);
         List<LabelStudioTask> tasks = files.stream()
                 .map(file -> new LabelStudioTask(buildFileUrl(tenantId, datasetId, file.id()), file.filename()))
@@ -292,6 +312,29 @@ public class DatasetApplicationService {
      */
     public void completeAnnotation(UUID tenantId, UUID datasetId) {
         Dataset dataset = getDataset(tenantId, datasetId);
+        if (dataset.status() == com.example.training.domain.DatasetStatus.TRAINING_REQUESTED
+                || dataset.status() == com.example.training.domain.DatasetStatus.TRAINING_COMPLETED) {
+            log.info("skip completeAnnotation since training already started: datasetId={}, status={}",
+                    dataset.id().value(),
+                    dataset.status());
+            return;
+        }
+        String annotationPayload = exportAnnotations(tenantId, datasetId);
+        String annotationKey = buildAnnotationObjectKey(tenantId, datasetId);
+        byte[] annotationBytes = annotationPayload.getBytes(StandardCharsets.UTF_8);
+        storageService.upload(
+                annotationKey,
+                new ByteArrayInputStream(annotationBytes),
+                annotationBytes.length,
+                "application/json"
+        );
+        log.info(
+                "stored annotation export: datasetId={}, annotationKey={}, bytes={}",
+                dataset.id().value(),
+                annotationKey,
+                annotationBytes.length
+        );
+
         dataset.markAnnotationCompleted();
         dataset.markTrainingRequested();
         repository.save(dataset);
@@ -301,7 +344,10 @@ public class DatasetApplicationService {
                 dataset.tenantId(),
                 dataset.id(),
                 Instant.now(),
-                Map.of("datasetName", dataset.name())
+                Map.of(
+                        "datasetName", dataset.name(),
+                        "annotationKey", annotationKey
+                )
         );
         eventRecordRepository.save(new TrainingEventRecord(
                 UUIDv7Generator.generate(),
@@ -312,6 +358,9 @@ public class DatasetApplicationService {
                 event.occurredAt()
         ));
         eventPublisher.publish(event);
+        log.info("training requested event published: datasetId={}, annotationKey={}",
+                dataset.id().value(),
+                annotationKey);
     }
 
     public List<TrainingEventRecord> listTrainingEvents(UUID tenantId) {
@@ -335,6 +384,28 @@ public class DatasetApplicationService {
 
     private String buildFileUrl(UUID tenantId, UUID datasetId, UUID fileId) {
         return publicBaseUrl + "/api/datasets/" + datasetId + "/files/" + fileId + "/preview?tenantId=" + tenantId;
+    }
+
+    private String buildLabelStudioWebhookUrl() {
+        if (labelStudioWebhookBaseUrl == null || labelStudioWebhookBaseUrl.isBlank()) {
+            return null;
+        }
+        String base = labelStudioWebhookBaseUrl.endsWith("/")
+                ? labelStudioWebhookBaseUrl.substring(0, labelStudioWebhookBaseUrl.length() - 1)
+                : labelStudioWebhookBaseUrl;
+        String url = base + "/api/webhooks/label-studio";
+        if (labelStudioWebhookToken != null && !labelStudioWebhookToken.isBlank()) {
+            url = url + "?token=" + labelStudioWebhookToken;
+        }
+        return url;
+    }
+
+    private String buildRawObjectKey(UUID tenantId, UUID datasetId, UUID fileId, String filename) {
+        return "datasets/" + tenantId + "/" + datasetId + "/raw/" + fileId + "-" + filename;
+    }
+
+    private String buildAnnotationObjectKey(UUID tenantId, UUID datasetId) {
+        return "datasets/" + tenantId + "/" + datasetId + "/annotations/label-studio.json";
     }
 
     private String defaultLabelConfig() {

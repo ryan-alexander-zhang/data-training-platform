@@ -14,14 +14,19 @@ import com.example.training.domain.TrainingResult;
 import com.example.training.domain.TrainingResultRepository;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.UUID;
 
 /**
  * 训练流程编排服务（模拟模型处理）。
  */
+@Slf4j
 public class TrainingWorkflowService {
     private final DatasetRepository repository;
     private final TrainingResultRepository resultRepository;
@@ -49,15 +54,37 @@ public class TrainingWorkflowService {
             return;
         }
 
-        String artifactKey = "results/" + dataset.tenantId().value() + "/" + dataset.id().value() + "/model.bin";
-        String metricsKey = "results/" + dataset.tenantId().value() + "/" + dataset.id().value() + "/metrics.json";
+        Object annotationValue = event.payload().get("annotationKey");
+        if (annotationValue == null || annotationValue.toString().isBlank()) {
+            throw new IllegalStateException("annotation key missing for training");
+        }
+        String annotationKey = annotationValue.toString();
+
+        ObjectStorageService.StoredObject annotationObject = storageService.download(annotationKey);
+        byte[] annotationBytes;
+        try (InputStream stream = annotationObject.stream()) {
+            annotationBytes = stream.readAllBytes();
+        } catch (IOException exception) {
+            throw new IllegalStateException("failed to read annotation payload", exception);
+        }
+        log.info(
+                "training requested: datasetId={}, annotationKey={}, annotationBytes={}",
+                dataset.id().value(),
+                annotationKey,
+                annotationBytes.length
+        );
+
+        String artifactKey = "datasets/" + dataset.tenantId().value() + "/" + dataset.id().value() + "/results/model.bin";
+        String metricsKey = "datasets/" + dataset.tenantId().value() + "/" + dataset.id().value() + "/results/metrics.json";
 
         byte[] modelBytes = ("mock model for dataset " + dataset.name()).getBytes(StandardCharsets.UTF_8);
         byte[] metricsBytes = ("{\"accuracy\":0.92,\"dataset\":\"" + dataset.name() + "\"}")
                 .getBytes(StandardCharsets.UTF_8);
+        log.info("mock training generated model bytes={}, metrics bytes={}", modelBytes.length, metricsBytes.length);
 
         storageService.upload(artifactKey, new ByteArrayInputStream(modelBytes), modelBytes.length, "application/octet-stream");
         storageService.upload(metricsKey, new ByteArrayInputStream(metricsBytes), metricsBytes.length, "application/json");
+        log.info("mock training uploaded results: modelKey={}, metricsKey={}", artifactKey, metricsKey);
 
         TrainingResult result = new TrainingResult(
                 UUIDv7Generator.generate(),
@@ -71,6 +98,9 @@ public class TrainingWorkflowService {
 
         dataset.markTrainingCompleted();
         repository.save(dataset);
+        log.info("training completed status saved: datasetId={}, status={}",
+                dataset.id().value(),
+                dataset.status());
 
         TrainingEvent completedEvent = new TrainingEvent(
                 TrainingEventType.TRAINING_COMPLETED,

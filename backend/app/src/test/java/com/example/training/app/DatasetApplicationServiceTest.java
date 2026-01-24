@@ -8,6 +8,7 @@ import com.example.training.domain.DatasetRepository;
 import com.example.training.domain.DatasetStatus;
 import com.example.training.domain.LabelProject;
 import com.example.training.domain.LabelProjectRepository;
+import com.example.training.domain.LabelStudioProjectSummary;
 import com.example.training.domain.LabelStudioService;
 import com.example.training.domain.LabelStudioTask;
 import com.example.training.domain.MultipartUpload;
@@ -66,7 +67,9 @@ class DatasetApplicationServiceTest {
                 uploadPartRepository,
                 labelProjectRepository,
                 labelStudioService,
-                "http://localhost:8081"
+                "http://localhost:8081",
+                "http://localhost:8081",
+                "test-token"
         );
 
         UUID tenantId = UUID.randomUUID();
@@ -94,6 +97,12 @@ class DatasetApplicationServiceTest {
         assertEquals(DatasetStatus.TRAINING_REQUESTED, afterAnnotation.status());
         assertEquals(1, eventPublisher.events.size());
         assertEquals(1, eventRecordRepository.records.size());
+        assertTrue(storageService.objects.keySet().stream()
+                .anyMatch(key -> key.contains("/annotations/label-studio.json")));
+        TrainingEvent published = eventPublisher.events.get(0);
+        assertEquals(TrainingEventType.TRAINING_REQUESTED, published.type());
+        assertTrue(published.payload().containsKey("annotationKey"));
+        assertTrue(published.payload().get("annotationKey").toString().contains("/annotations/"));
     }
 
     private static class InMemoryDatasetRepository implements DatasetRepository {
@@ -293,6 +302,13 @@ class DatasetApplicationServiceTest {
                     .filter(project -> project.datasetId().value().equals(datasetId.value()))
                     .findFirst();
         }
+
+        @Override
+        public Optional<LabelProject> findByLabelStudioProjectId(long labelStudioProjectId) {
+            return projects.stream()
+                    .filter(project -> project.labelStudioProjectId() == labelStudioProjectId)
+                    .findFirst();
+        }
     }
 
     private static class InMemoryLabelStudioService implements LabelStudioService {
@@ -308,6 +324,15 @@ class DatasetApplicationServiceTest {
         @Override
         public String exportAnnotations(long projectId) {
             return "{}";
+        }
+
+        @Override
+        public LabelStudioProjectSummary getProjectSummary(long projectId) {
+            return new LabelStudioProjectSummary(1L, 0L);
+        }
+
+        @Override
+        public void ensureWebhook(long projectId, String url) {
         }
     }
 }
