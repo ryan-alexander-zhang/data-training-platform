@@ -205,7 +205,7 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
                         {formatSize(file.size)} · {new Date(file.uploadedAt).toLocaleString()}
                       </p>
                     </div>
-                    <Badge variant="secondary">已上传</Badge>
+                    <Badge className="bg-muted text-muted-foreground">已上传</Badge>
                   </div>
                 ))}
               </div>
@@ -282,15 +282,26 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
             </div>
             {dataset.trainingResult ? (
               <div className="flex gap-2">
-                <Button asChild variant="secondary">
-                  <a href={`${apiBaseUrl}/api/datasets/${dataset.id}/results/metrics`}>
-                    下载指标
-                  </a>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    window.open(
+                      `${apiBaseUrl}/api/datasets/${dataset.id}/results/metrics`,
+                      "_blank"
+                    )
+                  }
+                >
+                  下载指标
                 </Button>
-                <Button asChild>
-                  <a href={`${apiBaseUrl}/api/datasets/${dataset.id}/results/model`}>
-                    下载模型
-                  </a>
+                <Button
+                  onClick={() =>
+                    window.open(
+                      `${apiBaseUrl}/api/datasets/${dataset.id}/results/model`,
+                      "_blank"
+                    )
+                  }
+                >
+                  下载模型
                 </Button>
               </div>
             ) : (
