@@ -1,7 +1,9 @@
 package com.example.training.infra.storage;
 
 import com.example.training.domain.ObjectStorageService;
+import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;
@@ -59,9 +61,17 @@ public class MinioObjectStorageService implements ObjectStorageService {
 
     private void ensureBucket() {
         try {
-            boolean exists = minioClient.bucketExists(b -> b.bucket(bucketName));
+            boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder()
+                            .bucket(bucketName)
+                            .build()
+            );
             if (!exists) {
-                minioClient.makeBucket(b -> b.bucket(bucketName));
+                minioClient.makeBucket(
+                        MakeBucketArgs.builder()
+                                .bucket(bucketName)
+                                .build()
+                );
             }
         } catch (Exception exception) {
             throw new IllegalStateException("minio bucket init failed: " + exception.getMessage(), exception);
