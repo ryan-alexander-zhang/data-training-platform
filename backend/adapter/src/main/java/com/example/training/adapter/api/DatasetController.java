@@ -82,7 +82,7 @@ public class DatasetController {
     @GetMapping("/{datasetId}")
     public DatasetDetailResponse getDataset(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId
+            @PathVariable("datasetId") UUID datasetId
     ) {
         Dataset dataset = service.getDataset(tenantId, datasetId);
         List<DatasetFileResponse> files = service.listFiles(tenantId, datasetId).stream()
@@ -111,7 +111,7 @@ public class DatasetController {
     @PostMapping("/{datasetId}/files")
     public DatasetFileResponse uploadFile(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId,
+            @PathVariable("datasetId") UUID datasetId,
             @RequestParam("file") MultipartFile file
     ) throws IOException {
         DatasetFile stored = service.uploadFile(
@@ -128,7 +128,7 @@ public class DatasetController {
     @PostMapping("/{datasetId}/upload/complete")
     public HttpStatus completeUpload(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId
+            @PathVariable("datasetId") UUID datasetId
     ) {
         service.completeUpload(tenantId, datasetId);
         return HttpStatus.ACCEPTED;
@@ -137,7 +137,7 @@ public class DatasetController {
     @PostMapping("/{datasetId}/annotation/complete")
     public HttpStatus completeAnnotation(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId
+            @PathVariable("datasetId") UUID datasetId
     ) {
         service.completeAnnotation(tenantId, datasetId);
         return HttpStatus.ACCEPTED;
@@ -146,7 +146,7 @@ public class DatasetController {
     @GetMapping("/{datasetId}/results/model")
     public ResponseEntity<InputStreamResource> downloadModel(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId
+            @PathVariable("datasetId") UUID datasetId
     ) {
         TrainingResult result = service.getTrainingResult(tenantId, datasetId);
         ObjectStorageService.StoredObject stored = storageService.download(result.artifactKey());
@@ -156,7 +156,7 @@ public class DatasetController {
     @GetMapping("/{datasetId}/results/metrics")
     public ResponseEntity<InputStreamResource> downloadMetrics(
             @RequestHeader("X-Tenant-Id") UUID tenantId,
-            @PathVariable UUID datasetId
+            @PathVariable("datasetId") UUID datasetId
     ) {
         TrainingResult result = service.getTrainingResult(tenantId, datasetId);
         ObjectStorageService.StoredObject stored = storageService.download(result.metricsKey());
