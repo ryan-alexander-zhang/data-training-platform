@@ -26,7 +26,9 @@ public class DatasetRepositoryImpl implements DatasetRepository {
     @Override
     public Dataset save(Dataset dataset) {
         DatasetEntity entity = toEntity(dataset);
-        if (mapper.selectById(entity.getId()) == null) {
+        QueryWrapper<DatasetEntity> existing = new QueryWrapper<>();
+        existing.eq("id", entity.getId());
+        if (mapper.selectOne(existing) == null) {
             mapper.insert(entity);
         } else {
             mapper.updateById(entity);
@@ -36,7 +38,10 @@ public class DatasetRepositoryImpl implements DatasetRepository {
 
     @Override
     public Optional<Dataset> findById(TenantId tenantId, DatasetId datasetId) {
-        DatasetEntity entity = mapper.selectById(datasetId.value());
+        QueryWrapper<DatasetEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq("id", datasetId.value())
+                .eq("tenant_id", tenantId.value());
+        DatasetEntity entity = mapper.selectOne(wrapper);
         if (entity == null || !entity.getTenantId().equals(tenantId.value())) {
             return Optional.empty();
         }
