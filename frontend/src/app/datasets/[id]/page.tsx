@@ -54,6 +54,30 @@ function formatSize(size: number) {
 export default function DatasetDetailPage({ params }: { params: { id: string } }) {
   const apiBaseUrl = getApiBaseUrl();
   const tenantId = getTenantId();
+
+  const downloadResult = async (path: string, fallbackFilename: string) => {
+    try {
+      const response = await apiFetch(`${apiBaseUrl}${path}`, {}, tenantId);
+      if (!response.ok) {
+        throw new Error("下载失败");
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition");
+      const match = disposition?.match(/filename="(.+)"/);
+      const filename = match?.[1] ?? fallbackFilename;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "下载失败";
+      setErrorMessage(message);
+    }
+  };
   const [dataset, setDataset] = useState<DatasetDetail | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -448,9 +472,9 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
                 <Button
                   variant="secondary"
                   onClick={() =>
-                    window.open(
-                      `${apiBaseUrl}/api/datasets/${dataset.id}/results/metrics`,
-                      "_blank"
+                    downloadResult(
+                      `/api/datasets/${dataset.id}/results/metrics`,
+                      "metrics.json"
                     )
                   }
                 >
@@ -458,9 +482,9 @@ export default function DatasetDetailPage({ params }: { params: { id: string } }
                 </Button>
                 <Button
                   onClick={() =>
-                    window.open(
-                      `${apiBaseUrl}/api/datasets/${dataset.id}/results/model`,
-                      "_blank"
+                    downloadResult(
+                      `/api/datasets/${dataset.id}/results/model`,
+                      "model.bin"
                     )
                   }
                 >
