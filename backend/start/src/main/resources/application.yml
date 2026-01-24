@@ -19,6 +19,7 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+  type-handlers-package: com.example.training.infra.persistence
 
 training:
   events:
