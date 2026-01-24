@@ -26,7 +26,7 @@ public class SettingsController {
     }
 
     @GetMapping
-    public SettingsResponse getSettings() {
-        return new SettingsResponse(labelStudioBaseUrl, minioBucket, minioEndpoint);
+    public Response<SettingsResponse> getSettings() {
+        return Response.ok(new SettingsResponse(labelStudioBaseUrl, minioBucket, minioEndpoint));
     }
 }

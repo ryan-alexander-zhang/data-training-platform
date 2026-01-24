@@ -4,6 +4,9 @@ import com.example.training.domain.Dataset;
 import com.example.training.domain.DatasetId;
 import com.example.training.domain.DatasetRepository;
 import com.example.training.domain.DatasetStatus;
+import com.example.training.domain.MultipartUpload;
+import com.example.training.domain.MultipartUploadPart;
+import com.example.training.domain.MultipartUploadedPart;
 import com.example.training.domain.ObjectStorageService;
 import com.example.training.domain.TenantId;
 import com.example.training.domain.TrainingEvent;
@@ -154,6 +157,20 @@ class TrainingWorkflowServiceTest {
         public StoredObject download(String objectKey) {
             byte[] data = objects.get(objectKey);
             return new StoredObject(new ByteArrayInputStream(data), data.length, "application/octet-stream");
+        }
+
+        @Override
+        public MultipartUpload initMultipartUpload(String objectKey, String contentType) {
+            return new MultipartUpload("upload-1", 1024L);
+        }
+
+        @Override
+        public MultipartUploadedPart uploadPart(String objectKey, String uploadId, int partNumber, java.io.InputStream inputStream, long size) {
+            return new MultipartUploadedPart(partNumber, "etag-" + partNumber, size);
+        }
+
+        @Override
+        public void completeMultipartUpload(String objectKey, String uploadId, List<MultipartUploadPart> parts) {
         }
     }
 }

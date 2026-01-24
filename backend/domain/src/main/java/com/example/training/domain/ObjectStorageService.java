@@ -10,6 +10,12 @@ public interface ObjectStorageService {
 
     StoredObject download(String objectKey);
 
+    MultipartUpload initMultipartUpload(String objectKey, String contentType);
+
+    MultipartUploadedPart uploadPart(String objectKey, String uploadId, int partNumber, InputStream inputStream, long size);
+
+    void completeMultipartUpload(String objectKey, String uploadId, java.util.List<MultipartUploadPart> parts);
+
     record StoredObject(InputStream stream, long size, String contentType) {
     }
 }

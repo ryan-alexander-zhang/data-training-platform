@@ -23,10 +23,11 @@ public class TrainingEventController {
     }
 
     @GetMapping
-    public List<TrainingEventResponse> listEvents(@RequestHeader("X-Tenant-Id") UUID tenantId) {
-        return service.listTrainingEvents(tenantId).stream()
+    public Response<List<TrainingEventResponse>> listEvents(@RequestHeader("X-Tenant-Id") UUID tenantId) {
+        List<TrainingEventResponse> payload = service.listTrainingEvents(tenantId).stream()
                 .map(this::toResponse)
                 .toList();
+        return Response.ok(payload);
     }
 
     private TrainingEventResponse toResponse(TrainingEventRecord record) {

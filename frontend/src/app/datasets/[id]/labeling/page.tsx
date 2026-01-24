@@ -67,7 +67,7 @@ export default function LabelingPage({ params }: { params: { id: string } }) {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="label-studio-url">项目地址</Label>
-            <Input id="label-studio-url" value={dataset.labelingUrl} readOnly />
+            <Input id="label-studio-url" value={dataset.labelingUrl ?? ""} readOnly />
           </div>
           <div>
             <p className="font-medium">说明</p>

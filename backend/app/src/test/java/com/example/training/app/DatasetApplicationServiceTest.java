@@ -6,6 +6,13 @@ import com.example.training.domain.DatasetFileRepository;
 import com.example.training.domain.DatasetId;
 import com.example.training.domain.DatasetRepository;
 import com.example.training.domain.DatasetStatus;
+import com.example.training.domain.LabelProject;
+import com.example.training.domain.LabelProjectRepository;
+import com.example.training.domain.LabelStudioService;
+import com.example.training.domain.LabelStudioTask;
+import com.example.training.domain.MultipartUpload;
+import com.example.training.domain.MultipartUploadPart;
+import com.example.training.domain.MultipartUploadedPart;
 import com.example.training.domain.ObjectStorageService;
 import com.example.training.domain.TenantId;
 import com.example.training.domain.TrainingEvent;
@@ -15,6 +22,10 @@ import com.example.training.domain.TrainingEventPublisher;
 import com.example.training.domain.TrainingEventType;
 import com.example.training.domain.TrainingResult;
 import com.example.training.domain.TrainingResultRepository;
+import com.example.training.domain.UploadPart;
+import com.example.training.domain.UploadPartRepository;
+import com.example.training.domain.UploadSession;
+import com.example.training.domain.UploadSessionRepository;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -39,6 +50,10 @@ class DatasetApplicationServiceTest {
         InMemoryTrainingEventRecordRepository eventRecordRepository = new InMemoryTrainingEventRecordRepository();
         InMemoryTrainingResultRepository resultRepository = new InMemoryTrainingResultRepository();
         InMemoryObjectStorageService storageService = new InMemoryObjectStorageService();
+        InMemoryUploadSessionRepository uploadSessionRepository = new InMemoryUploadSessionRepository();
+        InMemoryUploadPartRepository uploadPartRepository = new InMemoryUploadPartRepository();
+        InMemoryLabelProjectRepository labelProjectRepository = new InMemoryLabelProjectRepository();
+        InMemoryLabelStudioService labelStudioService = new InMemoryLabelStudioService();
 
         DatasetApplicationService service = new DatasetApplicationService(
                 datasetRepository,
@@ -46,7 +61,12 @@ class DatasetApplicationServiceTest {
                 fileRepository,
                 eventRecordRepository,
                 resultRepository,
-                storageService
+                storageService,
+                uploadSessionRepository,
+                uploadPartRepository,
+                labelProjectRepository,
+                labelStudioService,
+                "http://localhost:8081"
         );
 
         UUID tenantId = UUID.randomUUID();
@@ -67,6 +87,7 @@ class DatasetApplicationServiceTest {
         service.completeUpload(tenantId, dataset.id().value());
         Dataset updated = datasetRepository.findById(TenantId.of(tenantId), dataset.id()).orElseThrow();
         assertEquals(DatasetStatus.READY_FOR_LABELING, updated.status());
+        assertEquals(1, labelProjectRepository.projects.size());
 
         service.completeAnnotation(tenantId, dataset.id().value());
         Dataset afterAnnotation = datasetRepository.findById(TenantId.of(tenantId), dataset.id()).orElseThrow();
@@ -185,5 +206,109 @@ class DatasetApplicationServiceTest {
             byte[] data = objects.get(objectKey);
             return new StoredObject(new ByteArrayInputStream(data), data.length, "application/octet-stream");
         }
+
+        @Override
+        public MultipartUpload initMultipartUpload(String objectKey, String contentType) {
+            return new MultipartUpload("upload-1", 1024L);
+        }
+
+        @Override
+        public MultipartUploadedPart uploadPart(String objectKey, String uploadId, int partNumber, java.io.InputStream inputStream, long size) {
+            return new MultipartUploadedPart(partNumber, "etag-" + partNumber, size);
+        }
+
+        @Override
+        public void completeMultipartUpload(String objectKey, String uploadId, List<MultipartUploadPart> parts) {
+        }
+    }
+
+    private static class InMemoryUploadSessionRepository implements UploadSessionRepository {
+        private final List<UploadSession> sessions = new ArrayList<>();
+
+        @Override
+        public UploadSession save(UploadSession session) {
+            sessions.removeIf(existing -> existing.id().equals(session.id()));
+            sessions.add(session);
+            return session;
+        }
+
+        @Override
+        public Optional<UploadSession> findByUploadId(TenantId tenantId, UUID datasetId, String uploadId) {
+            return sessions.stream()
+                    .filter(session -> session.tenantId().value().equals(tenantId.value()))
+                    .filter(session -> session.datasetId().value().equals(datasetId))
+                    .filter(session -> session.uploadId().equals(uploadId))
+                    .findFirst();
+        }
+
+        @Override
+        public List<UploadSession> findByDataset(TenantId tenantId, DatasetId datasetId) {
+            return sessions.stream()
+                    .filter(session -> session.tenantId().value().equals(tenantId.value()))
+                    .filter(session -> session.datasetId().value().equals(datasetId.value()))
+                    .toList();
+        }
+    }
+
+    private static class InMemoryUploadPartRepository implements UploadPartRepository {
+        private final List<UploadPart> parts = new ArrayList<>();
+
+        @Override
+        public UploadPart save(UploadPart part) {
+            parts.removeIf(existing -> existing.id().equals(part.id()));
+            parts.add(part);
+            return part;
+        }
+
+        @Override
+        public Optional<UploadPart> findBySessionAndPartNumber(UUID sessionId, int partNumber) {
+            return parts.stream()
+                    .filter(part -> part.sessionId().equals(sessionId))
+                    .filter(part -> part.partNumber() == partNumber)
+                    .findFirst();
+        }
+
+        @Override
+        public List<UploadPart> findBySession(UUID sessionId) {
+            return parts.stream()
+                    .filter(part -> part.sessionId().equals(sessionId))
+                    .toList();
+        }
+    }
+
+    private static class InMemoryLabelProjectRepository implements LabelProjectRepository {
+        private final List<LabelProject> projects = new ArrayList<>();
+
+        @Override
+        public LabelProject save(LabelProject project) {
+            projects.removeIf(existing -> existing.id().equals(project.id()));
+            projects.add(project);
+            return project;
+        }
+
+        @Override
+        public Optional<LabelProject> findByDataset(TenantId tenantId, DatasetId datasetId) {
+            return projects.stream()
+                    .filter(project -> project.tenantId().value().equals(tenantId.value()))
+                    .filter(project -> project.datasetId().value().equals(datasetId.value()))
+                    .findFirst();
+        }
+    }
+
+    private static class InMemoryLabelStudioService implements LabelStudioService {
+        @Override
+        public long createProject(String title, String description, String labelConfig) {
+            return 100L;
+        }
+
+        @Override
+        public void importTasks(long projectId, List<LabelStudioTask> tasks) {
+        }
+
+        @Override
+        public String exportAnnotations(long projectId) {
+            return "{}";
+        }
     }
 }
+
