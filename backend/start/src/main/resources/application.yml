@@ -3,8 +3,6 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/training_platform}
     username: ${SPRING_DATASOURCE_USERNAME:training}
     password: ${SPRING_DATASOURCE_PASSWORD:training}
-  flyway:
-    validate-on-migrate: false
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
